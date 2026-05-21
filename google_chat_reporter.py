@@ -58,15 +58,57 @@ TOKEN_FILE = 'config/token.json'
 CREDENTIALS_FILE = 'config/client_secret.json'
 
 def setup_logging():
-    """Setup logging configuration."""
+    """
+    Setup logging configuration.
+    
+    Logging location priority:
+    1. If LOG_DIR environment variable is set, use that directory
+    2. If ../logs directory exists, use that
+    3. Otherwise, log to console only (stderr)
+    
+    This allows flexible deployment:
+    - Development: logs to console
+    - CGI deployment under wwwroot: logs can go to ../logs (outside wwwroot)
+    - Custom deployment: set LOG_DIR environment variable
+    """
     # Suppress specific warnings from Google API client
     logging.getLogger('googleapiclient.discovery_cache').setLevel(logging.ERROR)
     logging.getLogger('googleapiclient.discovery').setLevel(logging.ERROR)
     
-    logging.basicConfig(
-        level=logging.INFO,  # Changed back to INFO from DEBUG
-        format='%(asctime)s - %(levelname)s - %(message)s'
-    )
+    # Determine log directory
+    log_dir = None
+    log_file = None
+    
+    # Check for environment variable first
+    if os.environ.get('LOG_DIR'):
+        log_dir = os.environ.get('LOG_DIR')
+        if os.path.isdir(log_dir):
+            log_file = os.path.join(log_dir, 'google_chat_reporter.log')
+    
+    # If no env var, check for ../logs directory
+    if not log_file:
+        parent_logs = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'logs')
+        if os.path.isdir(parent_logs):
+            log_dir = parent_logs
+            log_file = os.path.join(parent_logs, 'google_chat_reporter.log')
+    
+    # Configure logging
+    if log_file:
+        # Log to file
+        logging.basicConfig(
+            level=logging.INFO,
+            format='%(asctime)s - %(levelname)s - %(message)s',
+            handlers=[
+                logging.FileHandler(log_file),
+                logging.StreamHandler()  # Also log to console
+            ]
+        )
+    else:
+        # Log to console only
+        logging.basicConfig(
+            level=logging.INFO,
+            format='%(asctime)s - %(levelname)s - %(message)s'
+        )
 
 def get_credentials() -> Credentials:
     """Fetch or refresh Google API credentials."""
