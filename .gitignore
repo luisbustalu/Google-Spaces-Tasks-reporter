@@ -1,3 +1,9 @@
 # Python cache files
 *.pyc
 __pycache__/
+
+# Working notes and planning documents (do not commit)
+ARCHITECTURE_EVALUATION.md
+ESTIMATED_DIRECTORY_STRUCTURE.md
+refactoring_plan_*.md
+test_chat_app.sh
